@@ -1,0 +1,9 @@
+# BuildKit reads this for game.Dockerfile, so the game repos need no .dockerignore of their own.
+**/node_modules
+**/dist
+**/styled-system
+**/.env
+.git
+.github
+.claude
+.scratch

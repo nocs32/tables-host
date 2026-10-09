@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#1c2d28" />
+  <meta name="description" content="Games to play with friends in the browser: Felt Table, Scribble Table, Telephone Table, Wild Table and Bluff Table." />
+  <title>Pick a Table</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23233a33'/%3E%3Cpath d='M14 46 C22 20 42 20 50 46' fill='none' stroke='%23f2efe6' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M18 50 H46' stroke='%23ffe58f' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Balsamiq+Sans:wght@400;700&family=Caveat:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --wall: #15120f;
+      --board: #233a33;
+      --board-deep: #1b2e28;
+      --chalk: #f2efe6;
+      --chalk-dim: rgba(242, 239, 230, 0.86);
+      --chalk-faint: rgba(242, 239, 230, 0.06);
+      --wood-1: #6b4423;
+      --wood-2: #8f5d35;
+      --wood-3: #5a381c;
+      --blue: #9fd3ff;
+      --pink: #ffb3d1;
+      --yellow: #ffe58f;
+      --mint: #a8f0c6;
+      --orange: #ffbf8a;
+      --hand: "Caveat", "Segoe Print", "Comic Sans MS", cursive;
+      --title: "Amatic SC", "Caveat", cursive;
+      --body: "Balsamiq Sans", "Segoe UI", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(255, 214, 160, 0.08), transparent 60%),
+        var(--wall);
+      color: var(--chalk);
+      font-family: var(--body);
+      font-size: 18px;
+      line-height: 1.5;
+      padding: clamp(16px, 3vw, 40px) clamp(8px, 3vw, 40px) 48px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Frame and board ─────────────────────────────── */
+
+    .frame {
+      position: relative;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: clamp(8px, 1.6vw, 20px);
+      border-radius: 12px;
+      background:
+        repeating-linear-gradient(92deg, rgba(0, 0, 0, 0.12) 0 2px, transparent 2px 9px, rgba(255, 220, 170, 0.05) 9px 11px, transparent 11px 23px),
+        linear-gradient(180deg, var(--wood-2), var(--wood-1) 40%, var(--wood-3));
+      box-shadow:
+        0 40px 80px rgba(0, 0, 0, 0.55),
+        0 0 0 1px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 220, 170, 0.25),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.35);
+    }
+
+    .board {
+      position: relative;
+      overflow: hidden;
+      border-radius: 4px;
+      padding: clamp(24px, 4vw, 56px) clamp(16px, 4vw, 56px) clamp(32px, 4vw, 48px);
+      background:
+        radial-gradient(ellipse 40% 30% at 18% 22%, rgba(255, 255, 255, 0.055), transparent 70%),
+        radial-gradient(ellipse 35% 25% at 82% 70%, rgba(255, 255, 255, 0.045), transparent 70%),
+        radial-gradient(ellipse 60% 18% at 55% 96%, rgba(255, 255, 255, 0.05), transparent 70%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.16 -0.04'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+        linear-gradient(160deg, var(--board), var(--board-deep));
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5), inset 0 0 60px rgba(0, 0, 0, 0.45);
+    }
+
+    /* Eraser swipes and half-wiped scribbles left from last game night. */
+    .smudge {
+      position: absolute;
+      pointer-events: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.035);
+      filter: blur(14px);
+    }
+
+    .smudge.a { width: 46%; height: 70px; top: 30%; left: -6%; transform: rotate(-8deg); }
+    .smudge.b { width: 38%; height: 60px; bottom: 12%; right: -4%; transform: rotate(6deg); }
+
+    .ghost {
+      position: absolute;
+      pointer-events: none;
+      font-family: var(--hand);
+      color: var(--chalk);
+      opacity: 0.07;
+      filter: blur(0.6px);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .ghost.math { top: 7%; right: 5%; font-size: 40px; transform: rotate(-6deg); }
+
+    .ghost-doodle {
+      position: absolute;
+      pointer-events: none;
+      opacity: 0.08;
+      stroke: var(--chalk);
+      fill: none;
+      stroke-width: 3;
+      stroke-linecap: round;
+    }
+
+    .ghost-doodle.ttt { width: 110px; top: 66%; right: 4%; transform: rotate(8deg); }
+
+    .chalky { filter: url(#chalk); }
+
+    /* Lighter grain for mid-size handwriting, so letters keep their shape. */
+    .chalky-soft { filter: url(#chalk-soft); }
+
+    /* ── Header ──────────────────────────────────────── */
+
+    header {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: start;
+      gap: 16px;
+      margin-bottom: clamp(28px, 4vw, 48px);
+    }
+
+    .kicker {
+      margin: 0;
+      font-family: var(--hand);
+      font-size: 24px;
+      color: var(--chalk-dim);
+      letter-spacing: 0.5px;
+    }
+
+    h1 {
+      position: relative;
+      display: inline-block;
+      margin: 0;
+      font-family: var(--title);
+      font-weight: 700;
+      font-size: clamp(64px, 11vw, 132px);
+      line-height: 0.95;
+      letter-spacing: 2px;
+    }
+
+    .underline {
+      display: block;
+      width: 100%;
+      height: 22px;
+      margin-top: -2px;
+      overflow: visible;
+    }
+
+    .underline path {
+      fill: none;
+      stroke: var(--yellow);
+      stroke-width: 4;
+      stroke-linecap: round;
+    }
+
+    .lede {
+      max-width: 38em;
+      margin: 18px 0 0;
+      font-size: clamp(18px, 1.7vw, 20px);
+      color: var(--chalk-dim);
+    }
+
+    .langs {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      font-family: var(--hand);
+      font-size: 24px;
+    }
+
+    .langs span { color: var(--chalk-dim); }
+
+    .lang {
+      position: relative;
+      padding: 4px 10px;
+      border: 0;
+      background: none;
+      color: var(--chalk-dim);
+      font: 700 24px var(--hand);
+      cursor: pointer;
+    }
+
+    .lang:hover { color: var(--chalk); }
+
+    .lang:focus-visible { outline: 2px dashed var(--yellow); outline-offset: 2px; border-radius: 6px; }
+
+    .lang[aria-pressed="true"] { color: var(--chalk); }
+
+    .lang[aria-pressed="true"]::after {
+      content: "";
+      position: absolute;
+      inset: -2px -4px;
+      border: 2.5px solid var(--yellow);
+      border-radius: 55% 45% 50% 50% / 60% 50% 50% 40%;
+      transform: rotate(-4deg);
+      filter: url(#chalk);
+    }
+
+    /* ── Cards ───────────────────────────────────────── */
+
+    .games {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: clamp(24px, 3vw, 40px) clamp(20px, 2.6vw, 36px);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .games > li { grid-column: span 2; display: flex; }
+
+    .games > li:nth-child(4) { grid-column: 2 / span 2; }
+    .games > li:nth-child(5) { grid-column: 4 / span 2; }
+
+    .card {
+      --ink: var(--chalk);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      padding: 22px 24px 20px;
+      color: var(--chalk);
+      text-decoration: none;
+      transform: rotate(var(--tilt, 0deg));
+      transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1);
+    }
+
+    /* A hand-drawn box: one firm stroke and one lighter second pass. */
+    .card::before,
+    .card::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+      border: 2.5px solid var(--ink);
+      filter: url(#chalk);
+    }
+
+    .card::before {
+      inset: 0;
+      border-radius: 255px 18px 225px 16px / 16px 225px 18px 255px;
+      opacity: 0.9;
+    }
+
+    .card::after {
+      inset: 4px -3px -2px 3px;
+      border-width: 1.5px;
+      border-radius: 18px 225px 16px 255px / 255px 16px 225px 18px;
+      opacity: 0.35;
+    }
+
+    .card:hover,
+    .card:focus-visible {
+      transform: rotate(0deg) translateY(-6px) scale(1.015);
+    }
+
+    .card:focus-visible { outline: none; }
+
+    .card:focus-visible::before { border-style: dashed; opacity: 1; }
+
+    .card-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .num {
+      display: block;
+      font-family: var(--hand);
+      font-size: 20px;
+      color: var(--chalk-dim);
+    }
+
+    .name {
+      margin: 0;
+      font-family: var(--title);
+      font-weight: 700;
+      font-size: clamp(42px, 4vw, 50px);
+      line-height: 0.95;
+      letter-spacing: 1px;
+    }
+
+    .doodle {
+      width: 84px;
+      height: 84px;
+      margin: -6px -6px 0 0;
+      overflow: visible;
+      transform: rotate(var(--doodle-tilt, 6deg));
+      transition: transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+    }
+
+    .card:hover .doodle,
+    .card:focus-visible .doodle {
+      transform: rotate(calc(var(--doodle-tilt, 6deg) * -1.4)) scale(1.08);
+    }
+
+    .doodle .d {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 3.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: draw 1.3s ease forwards;
+      animation-delay: calc(var(--i, 0) * 0.16s + 0.35s);
+    }
+
+    .doodle .fill-board { fill: var(--board); }
+    .doodle .fill-ink { fill: var(--ink); stroke: none; opacity: 0; animation: appear 0.4s ease forwards; animation-delay: calc(var(--i, 0) * 0.16s + 1.4s); }
+
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    @keyframes appear { to { opacity: 0.9; } }
+
+    .tagline {
+      margin: 12px 0 10px;
+      font-family: var(--hand);
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.1;
+      color: var(--ink);
+    }
+
+    .desc {
+      flex: 1;
+      margin: 0 0 16px;
+      font-size: 17px;
+      line-height: 1.55;
+      color: var(--chalk-dim);
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      margin: 0 0 14px;
+      padding: 0;
+      list-style: none;
+      font-size: 15.5px;
+    }
+
+    .meta li::before { content: "✓ "; color: var(--ink); }
+
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      align-self: flex-start;
+      font-family: var(--hand);
+      font-size: 27px;
+      font-weight: 700;
+      color: var(--chalk);
+    }
+
+    .cta svg {
+      width: 54px;
+      height: 22px;
+      overflow: visible;
+      transition: transform 0.25s ease;
+    }
+
+    .cta path {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .card:hover .cta svg,
+    .card:focus-visible .cta svg { transform: translateX(8px); }
+
+    .fresh {
+      position: absolute;
+      top: -18px;
+      left: -14px;
+      padding: 2px 12px 4px;
+      font-family: var(--hand);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--ink);
+      transform: rotate(-12deg);
+    }
+
+    .fresh::before {
+      content: "";
+      position: absolute;
+      inset: -2px -4px;
+      border: 2.5px solid var(--ink);
+      border-radius: 50% 45% 55% 50% / 60% 50% 55% 45%;
+      background: var(--board);
+      z-index: -1;
+      filter: url(#chalk);
+    }
+
+    /* ── Footer note and chalk tray ──────────────────── */
+
+    .note {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px 20px;
+      margin: clamp(36px, 5vw, 56px) auto 0;
+      text-align: center;
+      font-size: 16.5px;
+      color: var(--chalk-dim);
+    }
+
+    .note strong { color: var(--chalk); font-weight: 700; }
+
+    .tray {
+      position: relative;
+      height: 26px;
+      margin: 0 clamp(-8px, -1.6vw, -20px) clamp(-8px, -1.6vw, -20px);
+      background:
+        repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.1) 0 3px, transparent 3px 14px),
+        linear-gradient(180deg, #9a663b, var(--wood-1) 55%, var(--wood-3));
+      border-radius: 0 0 12px 12px;
+      box-shadow: inset 0 3px 4px rgba(0, 0, 0, 0.45);
+    }
+
+    .stick {
+      position: absolute;
+      bottom: 12px;
+      height: 11px;
+      border-radius: 6px;
+      box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.12), 0 2px 2px rgba(0, 0, 0, 0.35);
+    }
+
+    .eraser {
+      position: absolute;
+      bottom: 11px;
+      right: 14%;
+      width: 96px;
+      height: 28px;
+      border-radius: 4px;
+      background: linear-gradient(180deg, #c08a55 0 55%, #4a4a4a 55% 100%);
+      box-shadow: 0 3px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+      transform: rotate(-3deg);
+    }
+
+    .eraser::after {
+      content: "";
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      bottom: -2px;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(242, 239, 230, 0.35);
+      filter: blur(1px);
+    }
+
+    noscript a { color: var(--yellow); }
+
+    /* ── Smaller screens ─────────────────────────────── */
+
+    @media (max-width: 1000px) {
+      .games { grid-template-columns: repeat(2, 1fr); }
+      .games > li,
+      .games > li:nth-child(4) { grid-column: auto; }
+      .games > li:nth-child(5) { grid-column: 1 / -1; justify-self: center; width: min(100%, 50% - 18px); }
+    }
+
+    @media (max-width: 680px) {
+      body { font-size: 17px; }
+      header { grid-template-columns: 1fr; }
+      .langs { order: -1; justify-self: end; }
+      .games { grid-template-columns: 1fr; }
+      .games > li:nth-child(5) { width: 100%; }
+      .card { padding: 20px 18px 18px; }
+      .doodle { width: 70px; height: 70px; }
+      .ghost.math, .ghost-doodle.ttt { display: none; }
+      .eraser { width: 72px; right: 8%; }
+    }
+
+    /* Asked for more contrast: plain chalk, no grain, no faded text. */
+    @media (prefers-contrast: more) {
+      :root { --chalk-dim: var(--chalk); }
+      .chalky, .chalky-soft, .card::before, .card::after, .fresh::before, .lang[aria-pressed="true"]::after { filter: none; }
+      .ghost, .ghost-doodle, .smudge { display: none; }
+      .card::before { opacity: 1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .doodle .d { animation: none; stroke-dashoffset: 0; }
+      .doodle .fill-ink { animation: none; opacity: 0.9; }
+      .card, .doodle, .cta svg { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Chalk: roughens edges and knocks speckled gaps out of a stroke. -->
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
+    <filter id="chalk" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.6" xChannelSelector="R" yChannelSelector="G" result="rough" />
+      <feColorMatrix in="noise" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  2.8 0 0 0 -0.5" result="grain" />
+      <feComposite in="rough" in2="grain" operator="in" />
+    </filter>
+    <filter id="chalk-soft" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="3" result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.1" xChannelSelector="R" yChannelSelector="G" result="rough" />
+      <feColorMatrix in="noise" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  2.4 0 0 0 0" result="grain" />
+      <feComposite in="rough" in2="grain" operator="in" />
+    </filter>
+  </svg>
+
+  <div class="frame">
+    <main class="board">
+      <div class="smudge a" aria-hidden="true"></div>
+      <div class="smudge b" aria-hidden="true"></div>
+      <div class="ghost math" aria-hidden="true">2 + 2 = fish?</div>
+      <svg class="ghost-doodle ttt" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M36 8 C34 40 36 70 35 94 M66 6 C64 40 66 70 65 92 M8 36 C40 34 70 37 94 35 M6 66 C40 64 70 67 92 65" />
+        <path d="M14 14 L28 28 M28 14 L14 28 M74 44 a8 8 0 1 0 0.1 0 M44 74 L58 88 M58 74 L44 88" />
+      </svg>
+
+      <header>
+        <div>
+          <p class="kicker chalky-soft" data-t="kicker"></p>
+          <h1 class="chalky">
+            <span data-t="title"></span>
+            <svg class="underline" viewBox="0 0 300 22" preserveAspectRatio="none" aria-hidden="true">
+              <path pathLength="1" d="M4 14 C60 6 120 18 180 10 S270 8 296 12" style="stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1s 0.2s ease forwards" />
+            </svg>
+          </h1>
+          <p class="lede" data-t="lede"></p>
+        </div>
+        <div class="langs" role="group" aria-label="Language">
+          <button class="lang" type="button" data-lang="en" aria-pressed="true">EN</button>
+          <span aria-hidden="true">/</span>
+          <button class="lang" type="button" data-lang="uk" aria-pressed="false">УК</button>
+        </div>
+      </header>
+
+      <ul class="games" id="games"></ul>
+
+      <noscript>
+        <p>Felt Table: <a href="https://jigsaw.timnox.dev">jigsaw.timnox.dev</a></p>
+        <p>Scribble Table: <a href="https://scribble.timnox.dev">scribble.timnox.dev</a></p>
+        <p>Telephone Table: <a href="https://telephone.timnox.dev">telephone.timnox.dev</a></p>
+        <p>Wild Table: <a href="https://wild.timnox.dev">wild.timnox.dev</a></p>
+        <p>Bluff Table: <a href="https://bluff.timnox.dev">bluff.timnox.dev</a></p>
+      </noscript>
+
+      <p class="note">
+        <span data-t="open"></span>
+        <span data-t="langs"></span>
+      </p>
+    </main>
+
+    <div class="tray" aria-hidden="true">
+      <span class="stick" style="left: 9%; width: 52px; background: #f2efe6; transform: rotate(-2deg)"></span>
+      <span class="stick" style="left: 17%; width: 34px; background: var(--pink); transform: rotate(3deg)"></span>
+      <span class="stick" style="left: 23%; width: 44px; background: var(--yellow); transform: rotate(-1deg)"></span>
+      <span class="stick" style="left: 52%; width: 28px; background: var(--blue); transform: rotate(6deg)"></span>
+      <span class="eraser"></span>
+    </div>
+  </div>
+
+  <script>
+    const strings = {
+      en: {
+        pageTitle: 'Pick a Table',
+        kicker: 'timnox.dev · game night',
+        title: 'Pick a table',
+        lede: 'Games to play with friends in the browser. Open one, share the link, and everyone sits down at the same table. No accounts, no downloads.',
+        cta: 'Pull up a chair',
+        fresh: 'new!',
+        open: 'The tables are open day and night: pick one and share the link.',
+        langs: 'Every game speaks English and Ukrainian.',
+        langGroup: 'Language',
+      },
+      uk: {
+        pageTitle: 'Оберіть стіл',
+        kicker: 'timnox.dev · вечір ігор',
+        title: 'Оберіть стіл',
+        lede: 'Ігри для друзів просто в браузері. Відкрийте гру, поділіться посиланням, і всі сядуть за один стіл. Без акаунтів і без завантажень.',
+        cta: 'Сідайте за стіл',
+        fresh: 'нова!',
+        open: 'Столи відкриті вдень і вночі: оберіть один і поділіться посиланням.',
+        langs: 'Кожна гра говорить англійською та українською.',
+        langGroup: 'Мова',
+      },
+    };
+
+    // Each doodle is drawn on in chalk: `.d` strokes animate, `--i` staggers them.
+    const doodles = {
+      felt: `
+        <path class="d" style="--i:0" pathLength="1" d="M22 32 H40 C37 17 63 17 60 32 H78 V48 C93 45 93 71 78 68 V84 H60 C63 71 37 71 40 84 H22 V68 C35 71 35 45 22 48 Z" />
+        <path class="d" style="--i:3" pathLength="1" d="M84 16 l6 -6 M88 24 h8 M76 10 v-7" />`,
+      scribble: `
+        <path class="d" style="--i:0" pathLength="1" d="M30 74 L68 36 L80 48 L42 86 Z" />
+        <path class="d" style="--i:2" pathLength="1" d="M30 74 L23 92 L42 86 M62 42 L74 54" />
+        <path class="d" style="--i:3" pathLength="1" d="M8 34 C14 16 24 44 32 24 S46 12 52 22" />`,
+      telephone: `
+        <path class="d" style="--i:0" pathLength="1" d="M8 40 L28 45 L28 67 L8 72 Z" />
+        <path class="d" style="--i:1" pathLength="1" d="M92 40 L72 45 L72 67 L92 72 Z" />
+        <path class="d" style="--i:2" pathLength="1" d="M28 56 C40 30 58 84 72 56" />
+        <path class="d" style="--i:4" pathLength="1" d="M42 24 q8 -8 16 0 M36 14 q14 -13 28 0" />`,
+      wild: `
+        <rect class="d fill-board" style="--i:0" pathLength="1" x="32" y="18" width="34" height="50" rx="5" transform="rotate(-22 49 84)" />
+        <rect class="d fill-board" style="--i:1" pathLength="1" x="32" y="18" width="34" height="50" rx="5" />
+        <g transform="rotate(22 49 84)">
+          <rect class="d fill-board" style="--i:2" pathLength="1" x="32" y="18" width="34" height="50" rx="5" />
+          <path class="d" style="--i:4" pathLength="1" d="M49 31 L52 39 L60 39 L54 44 L56 52 L49 47 L42 52 L44 44 L38 39 L46 39 Z" />
+        </g>`,
+      bluff: `
+        <circle class="d" style="--i:0" pathLength="1" cx="50" cy="50" r="36" />
+        <circle class="d" style="--i:1" pathLength="1" cx="70" cy="50" r="7.5" />
+        <circle class="d" style="--i:2" pathLength="1" cx="60" cy="67.3" r="7.5" />
+        <circle class="d" style="--i:3" pathLength="1" cx="40" cy="67.3" r="7.5" />
+        <circle class="d" style="--i:4" pathLength="1" cx="30" cy="50" r="7.5" />
+        <circle class="d" style="--i:5" pathLength="1" cx="40" cy="32.7" r="7.5" />
+        <circle class="d" style="--i:6" pathLength="1" cx="60" cy="32.7" r="7.5" />
+        <circle class="fill-ink" style="--i:6" cx="60" cy="32.7" r="5" />
+        <circle class="d" style="--i:7" pathLength="1" cx="50" cy="50" r="3.5" />`,
+    };
+
+    const games = [
+      {
+        id: 'felt', name: 'Felt Table', url: 'https://jigsaw.timnox.dev', ink: 'var(--blue)', tilt: -1.2,
+        en: {
+          tagline: 'A jigsaw you solve together',
+          desc: 'Pick a picture, cut it into 12 to 500 pieces and put it back together with friends. Everyone’s cursor is live, and emoji float up the table.',
+          meta: ['1–12 players', 'co-op'],
+        },
+        uk: {
+          tagline: 'Пазл, який складають разом',
+          desc: 'Оберіть картинку, поріжте її на 12⁠–⁠500 деталей і складіть разом із друзями. Курсори всіх видно наживо, а емодзі злітають над столом.',
+          meta: ['1–12 гравців', 'разом'],
+        },
+      },
+      {
+        id: 'scribble', name: 'Scribble Table', url: 'https://scribble.timnox.dev', ink: 'var(--pink)', tilt: 0.9,
+        en: {
+          tagline: 'Draw it. Guess it. Fast.',
+          desc: 'One person draws a secret word, and everyone else races to guess it in the chat. Hints appear as the clock runs down, and a near miss gets a quiet “Close!”.',
+          meta: ['2–12 players', 'draw & guess'],
+        },
+        uk: {
+          tagline: 'Намалюйте. Вгадайте. Швидко.',
+          desc: 'Один гравець малює таємне слово, а решта навипередки вгадує його в чаті. Поки спливає час, з’являються підказки, а майже правильна відповідь отримує тихе «Близько!».',
+          meta: ['2–12 гравців', 'малюй і вгадуй'],
+        },
+      },
+      {
+        id: 'telephone', name: 'Telephone Table', url: 'https://telephone.timnox.dev', ink: 'var(--yellow)', tilt: -0.6,
+        en: {
+          tagline: 'Watch a sentence fall apart',
+          desc: 'Write a silly sentence, draw the one you’re handed, describe the drawing you get. Then flip through every book together and see where it all went.',
+          meta: ['3–12 players', 'draw & write'],
+        },
+        uk: {
+          tagline: 'Дивіться, як розсипається речення',
+          desc: 'Напишіть кумедне речення, намалюйте те, що отримали, опишіть чужий малюнок. А потім гортайте всі книжки разом і дивіться, куди все це завело.',
+          meta: ['3–12 гравців', 'малюй і пиши'],
+        },
+      },
+      {
+        id: 'wild', name: 'Wild Table', url: 'https://wild.timnox.dev', ink: 'var(--mint)', tilt: 1.1,
+        en: {
+          tagline: 'Match it, slap it, ring the bell',
+          desc: 'The colour-and-number card game on a 3D table in a 90s basement rec room. Throw your cards, switch on house rules, and let bots fill the empty seats.',
+          meta: ['2–6 players', 'cards', 'bots'],
+        },
+        uk: {
+          tagline: 'Карта на карту, і в дзвоник!',
+          desc: 'Карткова гра на колір і число за 3D-столом у підвальній кімнаті відпочинку 90-х. Кидайте карти, вмикайте домашні правила, а вільні місця займуть боти.',
+          meta: ['2–6 гравців', 'карти', 'боти'],
+        },
+      },
+      {
+        id: 'bluff', name: 'Bluff Table', url: 'https://bluff.timnox.dev', ink: 'var(--orange)', tilt: -0.9, fresh: true,
+        en: {
+          tagline: 'Lie with a straight face',
+          desc: 'Swear your cards are all Queens, call “Liar!” on the player before you, and hope the revolver only clicks. A bluffing game in a cardboard Western saloon.',
+          meta: ['2–6 players', 'bluffing', 'bots'],
+        },
+        uk: {
+          tagline: 'Брешіть, не кліпнувши оком',
+          desc: 'Присягайтеся, що всі ваші карти — дами, кричіть «Liar!» попередньому гравцеві й сподівайтеся, що револьвер лише клацне. Гра на блеф у картонному салуні Дикого Заходу.',
+          meta: ['2–6 гравців', 'блеф', 'боти'],
+        },
+      },
+    ];
+
+    const arrow = '<svg viewBox="0 0 60 22" aria-hidden="true"><path d="M2 12 C18 9 36 14 54 11 M44 3 L55 11 L45 19" /></svg>';
+
+    const cardHtml = (game, index) => `
+      <li>
+        <a class="card" href="${game.url}" style="--ink: ${game.ink}; --tilt: ${game.tilt}deg; --doodle-tilt: ${index % 2 ? -7 : 7}deg">
+          ${game.fresh ? '<span class="fresh" data-t="fresh"></span>' : ''}
+          <div class="card-head">
+            <div>
+              <span class="num chalky-soft">No. ${index + 1}</span>
+              <h2 class="name chalky">${game.name}</h2>
+            </div>
+            <svg class="doodle chalky" viewBox="0 0 100 100" aria-hidden="true">${doodles[game.id]}</svg>
+          </div>
+          <p class="tagline chalky-soft" data-g="tagline"></p>
+          <p class="desc" data-g="desc"></p>
+          <ul class="meta" data-g="meta"></ul>
+          <span class="cta chalky-soft"><span data-t="cta"></span>${arrow}</span>
+        </a>
+      </li>`;
+
+    const list = document.getElementById('games');
+
+    list.innerHTML = games.map(cardHtml).join('');
+
+    const readStoredLanguage = () => {
+      try {
+        return localStorage.getItem('tables-lang');
+      } catch {
+        return null;
+      }
+    };
+
+    const storeLanguage = (lang) => {
+      try {
+        localStorage.setItem('tables-lang', lang);
+      } catch {
+        // Private windows can refuse storage; the page works the same.
+      }
+    };
+
+    // The browser's preferred languages in order ("uk-UA", "pl", "en-GB"…): the first one this
+    // page speaks wins, so Polish-then-Ukrainian lands on Ukrainian. Nothing matches: English.
+    const browserLanguage = () => {
+      const preferred = navigator.languages?.length ? navigator.languages : [navigator.language || ''];
+      const match = preferred.map((tag) => tag.toLowerCase().split('-')[0]).find((base) => base in strings);
+
+      return match ?? 'en';
+    };
+
+    const initialLanguage = () => {
+      const asked = new URLSearchParams(location.search).get('lang');
+
+      if (asked in strings) return asked;
+
+      const stored = readStoredLanguage();
+
+      if (stored in strings) return stored;
+
+      return browserLanguage();
+    };
+
+    const applyLanguage = (lang) => {
+      const t = strings[lang];
+
+      document.documentElement.lang = lang;
+      document.title = t.pageTitle;
+      document.querySelector('.langs').setAttribute('aria-label', t.langGroup);
+      document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = t[el.dataset.t]; });
+      document.querySelectorAll('.lang').forEach((btn) => btn.setAttribute('aria-pressed', String(btn.dataset.lang === lang)));
+
+      list.querySelectorAll('.card').forEach((card, i) => {
+        const copy = games[i][lang];
+
+        card.querySelector('[data-g="tagline"]').textContent = copy.tagline;
+        card.querySelector('[data-g="desc"]').textContent = copy.desc;
+        card.querySelector('[data-g="meta"]').innerHTML = copy.meta.map((m) => `<li>${m}</li>`).join('');
+      });
+    };
+
+    document.querySelectorAll('.lang').forEach((btn) => btn.addEventListener('click', () => {
+      applyLanguage(btn.dataset.lang);
+      storeLanguage(btn.dataset.lang);
+    }));
+
+    applyLanguage(initialLanguage());
+  </script>
+</body>
+</html>

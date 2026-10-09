@@ -1,0 +1,19 @@
+# One tunnel for every table. Cloudflare terminates HTTPS and sends each hostname here; Caddy
+# then picks the game by hostname. The tunnel's credentials are secrets/tunnel.json on the Pi.
+tunnel: 791babf2-5007-4ae6-bbac-8620aaaa55c1
+credentials-file: /etc/cloudflared/tunnel.json
+
+ingress:
+  - hostname: library.timnox.dev
+    service: http://caddy:80
+  - hostname: jigsaw.timnox.dev
+    service: http://caddy:80
+  - hostname: scribble.timnox.dev
+    service: http://caddy:80
+  - hostname: telephone.timnox.dev
+    service: http://caddy:80
+  - hostname: wild.timnox.dev
+    service: http://caddy:80
+  - hostname: bluff.timnox.dev
+    service: http://caddy:80
+  - service: http_status:404

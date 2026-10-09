@@ -1,0 +1,88 @@
+# The five tables, Caddy in front of them, and the Cloudflare Tunnel that brings the internet in.
+# Run it with ./deploy.sh rather than by hand: it fetches the games and builds one at a time.
+
+name: tables
+
+x-game: &game
+  restart: unless-stopped
+  networks: [tables]
+  # Tables live in memory: give a stopping server a moment, but no more.
+  stop_grace_period: 10s
+
+services:
+  felt:
+    <<: *game
+    image: tables/felt
+    build:
+      context: ./games/felt-table-jigsaw
+      dockerfile: ../../game.Dockerfile
+      args: { SCOPE: felt-table }
+    # The Unsplash key. Optional: without it the Unsplash picker is off.
+    env_file:
+      - path: ./secrets/felt.env
+        required: false
+
+  scribble:
+    <<: *game
+    image: tables/scribble
+    build:
+      context: ./games/scribble-table
+      dockerfile: ../../game.Dockerfile
+      args: { SCOPE: scribble-table }
+
+  telephone:
+    <<: *game
+    image: tables/telephone
+    build:
+      context: ./games/telephone-table
+      dockerfile: ../../game.Dockerfile
+      args: { SCOPE: telephone-table }
+
+  wild:
+    <<: *game
+    image: tables/wild
+    build:
+      context: ./games/wild-table
+      dockerfile: ../../game.Dockerfile
+      args: { SCOPE: wild-table }
+
+  bluff:
+    <<: *game
+    image: tables/bluff
+    build:
+      context: ./games/bluff-table
+      dockerfile: ../../game.Dockerfile
+      args: { SCOPE: bluff-table }
+
+  caddy:
+    image: tables/caddy
+    build:
+      context: ./caddy
+      additional_contexts:
+        felt: service:felt
+        scribble: service:scribble
+        telephone: service:telephone
+        wild: service:wild
+        bluff: service:bluff
+    restart: unless-stopped
+    networks: [tables]
+    depends_on: [felt, scribble, telephone, wild, bluff]
+    volumes:
+      - ./library:/srv/library:ro
+    # Only on the Pi itself, for testing through an SSH port forward. The internet comes in
+    # through the tunnel, never through this port.
+    ports:
+      - 127.0.0.1:8080:80
+
+  tunnel:
+    image: cloudflare/cloudflared:2026.9.1
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    restart: unless-stopped
+    networks: [tables]
+    depends_on: [caddy]
+    volumes:
+      - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+      - ./secrets/tunnel.json:/etc/cloudflared/tunnel.json:ro
+
+networks:
+  tables:

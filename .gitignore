@@ -1,0 +1,6 @@
+# The game checkouts deploy.sh makes.
+games/
+
+# Tunnel credentials and the Felt Table .env: they live on the Pi only.
+secrets/*
+!secrets/README.md

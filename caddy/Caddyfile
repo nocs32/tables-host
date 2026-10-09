@@ -1,0 +1,67 @@
+# The tunnel hands every hostname to Caddy over plain HTTP; Cloudflare does the HTTPS.
+# The *.localhost names are for testing from the PC through an SSH port forward (see README).
+{
+	auto_https off
+	admin off
+}
+
+# One game: its API, its live tables and its web app. {args[0]} is the compose service name.
+(game) {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy {args[0]}:3000
+	}
+
+	# The web app talks to Colyseus at /live; core-api serves those routes at its root.
+	handle_path /live/* {
+		reverse_proxy {args[0]}:3000
+	}
+
+	handle {
+		root * /srv/{args[0]}
+
+		# Vite fingerprints everything under /assets, so it can be cached for good.
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@pages not path /assets/*
+		header @pages Cache-Control "no-cache"
+
+		# Room links like /r/abc123 are app routes: serve the app and let it route.
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+http://jigsaw.timnox.dev, http://jigsaw.localhost {
+	import game felt
+}
+
+http://scribble.timnox.dev, http://scribble.localhost {
+	import game scribble
+}
+
+http://telephone.timnox.dev, http://telephone.localhost {
+	import game telephone
+}
+
+http://wild.timnox.dev, http://wild.localhost {
+	import game wild
+}
+
+http://bluff.timnox.dev, http://bluff.localhost {
+	import game bluff
+}
+
+# The catalogue page. Mounted from the repo, so a change to it needs no rebuild.
+http://library.timnox.dev, http://library.localhost {
+	encode zstd gzip
+	header Cache-Control "no-cache"
+	root * /srv/library
+	file_server
+}
+
+# Anything else (a hostname the tunnel shouldn't be sending).
+http:// {
+	respond "Not found" 404
+}
