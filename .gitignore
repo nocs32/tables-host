@@ -5,5 +5,8 @@ games/
 secrets/*
 !secrets/README.md
 
+# Static sites copied in from other repos (say-uncle's tools/deploy-landing.ps1).
+sites/
+
 # Output of a deploy run.
 deploy.log

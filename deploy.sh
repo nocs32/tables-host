@@ -41,7 +41,8 @@ fetch() {
 }
 
 echo "Fetching games"
-mkdir -p games
+# sites/ too: Caddy mounts it, and a folder Docker makes for a mount belongs to root.
+mkdir -p games sites
 # Caddy needs every game's image, so make sure every checkout exists, even when building a few.
 for service in "${order[@]}"; do
   if [[ " ${services[*]} " == *" $service "* || ! -d "games/${repos[$service]}" ]]; then

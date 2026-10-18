@@ -61,6 +61,22 @@ http://library.timnox.dev, http://library.localhost {
 	file_server
 }
 
+# Say Uncle's landing page: a static Astro build that say-uncle's tools/deploy-landing.ps1 copies
+# to sites/say-uncle, so a new version needs no rebuild. Public, but kept out of search engines.
+http://sayuncle.timnox.dev, http://sayuncle.localhost {
+	encode zstd gzip
+	header X-Robots-Tag "noindex, nofollow"
+
+	# Astro fingerprints everything under /_astro, so it can be cached for good.
+	@assets path /_astro/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+	@pages not path /_astro/*
+	header @pages Cache-Control "no-cache"
+
+	root * /srv/sites/say-uncle
+	file_server
+}
+
 # Anything else (a hostname the tunnel shouldn't be sending).
 http:// {
 	respond "Not found" 404

@@ -1,6 +1,6 @@
 # Tables Host
 
-Runs the five table games and their catalogue page on a Raspberry Pi, behind one Cloudflare Tunnel.
+Runs the five table games, their catalogue page and Say Uncle's landing page on a Raspberry Pi, behind one Cloudflare Tunnel.
 
 | Address | What |
 |---|---|
@@ -10,6 +10,7 @@ Runs the five table games and their catalogue page on a Raspberry Pi, behind one
 | https://telephone.timnox.dev | [Telephone Table](https://github.com/nocs32/telephone-table), the telephone drawing game |
 | https://wild.timnox.dev | [Wild Table](https://github.com/nocs32/wild-table), the card game on a 3D table |
 | https://bluff.timnox.dev | [Bluff Table](https://github.com/nocs32/bluff-table), the bluffing game in a saloon |
+| https://sayuncle.timnox.dev | Say Uncle's landing page (static, not indexed), copied in from the PC |
 
 The game repos don't change for this: `deploy.sh` clones each one's `main` from GitHub and builds it with the same Dockerfile.
 
@@ -21,7 +22,8 @@ internet ─► Cloudflare ─► tunnel ─► caddy ─┬─► library page 
                                               ├─► scribble
                                               ├─► telephone
                                               ├─► wild
-                                              └─► bluff
+                                              ├─► bluff
+                                              └─► sites/say-uncle (static)
 ```
 
 - **tunnel** (`cloudflare/cloudflared`): connects out to Cloudflare, so no router ports are opened. Cloudflare does the HTTPS; every hostname arrives at Caddy.
@@ -43,6 +45,7 @@ git pull
 - `./deploy.sh` fetches every game's latest `main`, builds them **one at a time** (five Vite builds at once would run the Pi out of memory), rebuilds Caddy and restarts what changed.
 - `./deploy.sh wild` rebuilds just Wild Table (and Caddy, to pick up its web app). Several work too: `./deploy.sh wild bluff`.
 - A change to `library/index.html` needs no build: `git pull` is enough, since Caddy reads it straight from this folder.
+- **Say Uncle's landing page** isn't built here (its repo is private, and its build wants the whole workspace). From the PC, in the say-uncle repo, `.\tools\deploy-landing.ps1` builds it, copies it to `sites/say-uncle` over SSH (host `pi`) and swaps it in. No restart: Caddy serves `sites/` straight from this folder.
 
 The first full build takes a while on a Pi 4; later ones reuse the package cache.
 
@@ -79,7 +82,7 @@ cloudflared tunnel create tables
 cloudflared tunnel route dns --overwrite-dns tables library.timnox.dev
 ```
 
-Repeat the `route dns` line for `jigsaw`, `scribble`, `telephone`, `wild` and `bluff`. Then:
+Repeat the `route dns` line for `jigsaw`, `scribble`, `telephone`, `wild`, `bluff` and `sayuncle`. Then:
 
 - copy `~/.cloudflared/<tunnel id>.json` to `secrets/tunnel.json` on the Pi;
 - put the tunnel id in `cloudflared/config.yml`;

@@ -69,6 +69,9 @@ services:
     depends_on: [felt, scribble, telephone, wild, bluff]
     volumes:
       - ./library:/srv/library:ro
+      # Static sites copied in from other repos (sites/say-uncle). The folder rather than each
+      # site, so a site swapped in by renaming its folder shows at once.
+      - ./sites:/srv/sites:ro
     # Only on the Pi itself, for testing through an SSH port forward. The internet comes in
     # through the tunnel, never through this port.
     ports:
