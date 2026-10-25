@@ -1,0 +1,38 @@
+# Cinemate's live-share relay (MediaMTX, github.com/nocs32/cinemate spec §14). It takes a share over WHIP
+# and hands it to every watcher over WHEP, without re-encoding.
+#
+# - The small setup requests come in through the tunnel: Caddy forwards cinemate.timnox.dev/media/* to
+#   :8889 here.
+# - The video itself can't use the tunnel: it comes in on UDP 8189 (TCP 8189 as the fallback), which the
+#   MikroTik forwards to the Pi. MediaMTX tells browsers to send it to the home's public IP, set in
+#   secrets/media.env (MTX_WEBRTCADDITIONALHOSTS) so it stays out of this public repo.
+# - Before every publish and every watch it asks Cinemate's core-api, which says yes only for a share a
+#   room has open right now, and only to the sharer's key for publishing.
+logLevel: info
+
+rtsp: false
+rtmp: false
+hls: false
+srt: false
+moq: false
+
+# Only from the Pi itself, for a look at who's connected: curl localhost:9997/v3/paths/list
+api: true
+apiAddress: 127.0.0.1:9997
+
+webrtc: true
+webrtcAddress: :8889
+webrtcAllowOrigins: ['*']
+webrtcLocalUDPAddress: :8189
+webrtcLocalTCPAddress: :8189
+# The LAN address too, so people at home connect straight over the LAN.
+webrtcIPsFromInterfaces: true
+webrtcIPsFromInterfacesList: [eth0]
+
+authMethod: http
+authHTTPAddress: http://127.0.0.1:2573/relay/auth
+authHTTPExclude:
+  - action: api
+
+paths:
+  '~^live/[0-9a-f-]{36}$': {}

@@ -54,6 +54,15 @@ http://bluff.timnox.dev, http://bluff.localhost {
 }
 
 http://cinemate.timnox.dev, http://cinemate.localhost {
+	# Live share: the relay (MediaMTX, on the Pi's own network) answers the small WHIP/WHEP setup
+	# requests here. The video itself skips the tunnel: it goes over the MikroTik's UDP 8189 forward.
+	handle_path /media/* {
+		reverse_proxy host.docker.internal:8889 {
+			# The relay's redirects and WHEP session addresses start at its root: put /media back.
+			header_down Location ^/ /media/
+		}
+	}
+
 	import game cinemate
 }
 

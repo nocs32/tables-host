@@ -23,12 +23,16 @@ internet ─► Cloudflare ─► tunnel ─► caddy ─┬─► library page 
                                               ├─► telephone
                                               ├─► wild
                                               ├─► bluff
-                                              └─► cinemate
+                                              └─► cinemate ◄── media (relay)
+                                                                 ▲
+internet ─► MikroTik, UDP/TCP 8189 ─► media (Cinemate's live-share video)
 ```
 
-- **tunnel** (`cloudflare/cloudflared`): connects out to Cloudflare, so no router ports are opened. Cloudflare does the HTTPS; every hostname arrives at Caddy.
+- **tunnel** (`cloudflare/cloudflared`): connects out to Cloudflare, so the sites need no router ports. Cloudflare does the HTTPS; every hostname arrives at Caddy.
 - **caddy**: picks the game by hostname. It serves the game's built web app, sends `/api/*` to the game, and sends `/live/*` (the live tables, over WebSocket) to the game without the `/live` prefix, the same as `vite preview` did for `pnpm play`.
 - **One container per game** (`game.Dockerfile`): runs the game's core-api on port 3000. The image also carries the built web app, which the Caddy image copies at build time.
+
+- **media** (`bluenviron/mediamtx`, `media/mediamtx.yml`): Cinemate's live-share relay. It takes a share over WHIP and copies it to every watcher over WHEP without re-encoding. The small setup requests come through the tunnel (Caddy sends `cinemate.timnox.dev/media/*` to it); the video can't, so it comes in on **UDP 8189** (TCP 8189 as the fallback), the one port the MikroTik forwards to the Pi. It runs on the host network to announce the Pi's addresses, takes the home's public IP from `secrets/media.env`, and asks Cinemate's core-api (`127.0.0.1:2573`, only on the Pi) before anyone publishes or watches.
 
 Tables live in each game's memory, as before: restarting a game's container clears its tables, and only that game's.
 

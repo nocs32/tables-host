@@ -62,6 +62,24 @@ services:
       context: ./games/cinemate
       dockerfile: ../../game.Dockerfile
       args: { SCOPE: cinemate }
+    # Only on the Pi itself: the live-share relay (media, on the host network) asks core-api here before
+    # anyone publishes or watches.
+    ports:
+      - 127.0.0.1:2573:3000
+
+  # Cinemate's live-share relay (media/mediamtx.yml). On the host network, so it can announce the Pi's
+  # own addresses to browsers; the MikroTik forwards UDP and TCP 8189 to it.
+  media:
+    image: bluenviron/mediamtx:1.21.3
+    restart: unless-stopped
+    network_mode: host
+    depends_on: [cinemate]
+    volumes:
+      - ./media/mediamtx.yml:/mediamtx.yml:ro
+    # MTX_WEBRTCADDITIONALHOSTS: the home's public IP, kept out of this public repo.
+    env_file:
+      - path: ./secrets/media.env
+        required: false
 
   caddy:
     image: tables/caddy
@@ -79,6 +97,10 @@ services:
     depends_on: [felt, scribble, telephone, wild, bluff, cinemate]
     volumes:
       - ./library:/srv/library:ro
+    # Cinemate's live-share relay runs on the host network (it has to announce the Pi's own
+    # addresses), so Caddy reaches it through the host.
+    extra_hosts:
+      - host.docker.internal:host-gateway
     # Only on the Pi itself, for testing through an SSH port forward. The internet comes in
     # through the tunnel, never through this port.
     ports:
