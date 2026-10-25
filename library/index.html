@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#1c2d28" />
-  <meta name="description" content="Games to play with friends in the browser: Felt Table, Scribble Table, Telephone Table, Wild Table and Bluff Table." />
+  <meta name="description" content="Games to play with friends in the browser: Felt Table, Scribble Table, Telephone Table, Wild Table and Bluff Table, and Cinemate for watching videos together." />
   <title>Pick a Table</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23233a33'/%3E%3Cpath d='M14 46 C22 20 42 20 50 46' fill='none' stroke='%23f2efe6' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M18 50 H46' stroke='%23ffe58f' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -26,6 +26,7 @@
       --yellow: #ffe58f;
       --mint: #a8f0c6;
       --orange: #ffbf8a;
+      --lilac: #d4c2ff;
       --hand: "Caveat", "Segoe Print", "Comic Sans MS", cursive;
       --title: "Amatic SC", "Caveat", cursive;
       --body: "Balsamiq Sans", "Segoe UI", system-ui, sans-serif;
@@ -223,9 +224,6 @@
     }
 
     .games > li { grid-column: span 2; display: flex; }
-
-    .games > li:nth-child(4) { grid-column: 2 / span 2; }
-    .games > li:nth-child(5) { grid-column: 4 / span 2; }
 
     .card {
       --ink: var(--chalk);
@@ -472,9 +470,7 @@
 
     @media (max-width: 1000px) {
       .games { grid-template-columns: repeat(2, 1fr); }
-      .games > li,
-      .games > li:nth-child(4) { grid-column: auto; }
-      .games > li:nth-child(5) { grid-column: 1 / -1; justify-self: center; width: min(100%, 50% - 18px); }
+      .games > li { grid-column: auto; }
     }
 
     @media (max-width: 680px) {
@@ -557,6 +553,7 @@
         <p>Telephone Table: <a href="https://telephone.timnox.dev">telephone.timnox.dev</a></p>
         <p>Wild Table: <a href="https://wild.timnox.dev">wild.timnox.dev</a></p>
         <p>Bluff Table: <a href="https://bluff.timnox.dev">bluff.timnox.dev</a></p>
+        <p>Cinemate: <a href="https://cinemate.timnox.dev">cinemate.timnox.dev</a></p>
       </noscript>
 
       <p class="note">
@@ -631,6 +628,13 @@
         <circle class="d" style="--i:6" pathLength="1" cx="60" cy="32.7" r="7.5" />
         <circle class="fill-ink" style="--i:6" cx="60" cy="32.7" r="5" />
         <circle class="d" style="--i:7" pathLength="1" cx="50" cy="50" r="3.5" />`,
+      cinemate: `
+        <circle class="d" style="--i:0" pathLength="1" cx="34" cy="22" r="11" />
+        <circle class="d" style="--i:1" pathLength="1" cx="64" cy="22" r="11" />
+        <circle class="fill-ink" style="--i:1" cx="34" cy="22" r="2.5" />
+        <circle class="fill-ink" style="--i:1" cx="64" cy="22" r="2.5" />
+        <rect class="d" style="--i:2" pathLength="1" x="12" y="38" width="76" height="48" rx="5" />
+        <path class="d" style="--i:4" pathLength="1" d="M43 51 L61 62 L43 73 Z" />`,
     };
 
     const games = [
@@ -687,7 +691,7 @@
         },
       },
       {
-        id: 'bluff', name: 'Bluff Table', url: 'https://bluff.timnox.dev', ink: 'var(--orange)', tilt: -0.9, fresh: true,
+        id: 'bluff', name: 'Bluff Table', url: 'https://bluff.timnox.dev', ink: 'var(--orange)', tilt: -0.9,
         en: {
           tagline: 'Lie with a straight face',
           desc: 'Swear your cards are all Queens, call “Liar!” on the player before you, and hope the revolver only clicks. A bluffing game in a cardboard Western saloon.',
@@ -697,6 +701,19 @@
           tagline: 'Брешіть, не кліпнувши оком',
           desc: 'Присягайтеся, що всі ваші карти — дами, кричіть «Liar!» попередньому гравцеві й сподівайтеся, що револьвер лише клацне. Гра на блеф у картонному салуні Дикого Заходу.',
           meta: ['2–6 гравців', 'блеф', 'боти'],
+        },
+      },
+      {
+        id: 'cinemate', name: 'Cinemate', url: 'https://cinemate.timnox.dev', ink: 'var(--lilac)', tilt: 0.8, fresh: true,
+        en: {
+          tagline: 'Watch together, frame for frame',
+          desc: 'Paste a YouTube link or a video file, and everyone watches the same frame at full quality: no 720p cap. If someone buffers, the room waits for them and says who.',
+          meta: ['1–12 viewers', 'YouTube & files', 'in sync'],
+        },
+        uk: {
+          tagline: 'Дивіться разом, кадр у кадр',
+          desc: 'Вставте посилання на YouTube чи відеофайл, і всі бачать той самий кадр у повній якості, без обмеження в 720p. Якщо хтось буферизує, кімната зачекає й скаже, на кого.',
+          meta: ['1–12 глядачів', 'YouTube і файли', 'синхронно'],
         },
       },
     ];
