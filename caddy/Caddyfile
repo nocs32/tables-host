@@ -53,6 +53,10 @@ http://bluff.timnox.dev, http://bluff.localhost {
 	import game bluff
 }
 
+http://cinemate.timnox.dev, http://cinemate.localhost {
+	import game cinemate
+}
+
 # The catalogue page. Mounted from the repo, so a change to it needs no rebuild.
 http://library.timnox.dev, http://library.localhost {
 	encode zstd gzip

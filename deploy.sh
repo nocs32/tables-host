@@ -4,7 +4,7 @@
 #   ./deploy.sh              every game, then Caddy and the tunnel
 #   ./deploy.sh wild bluff   only these games (Caddy is rebuilt too, to pick up their web apps)
 #
-# Games are built one by one on purpose: five Vite builds at once would run the Pi out of memory.
+# Games are built one by one on purpose: six Vite builds at once would run the Pi out of memory.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -15,8 +15,9 @@ declare -A repos=(
   [telephone]=telephone-table
   [wild]=wild-table
   [bluff]=bluff-table
+  [cinemate]=cinemate
 )
-order=(felt scribble telephone wild bluff)
+order=(felt scribble telephone wild bluff cinemate)
 
 if [[ $# -gt 0 ]]; then
   for service in "$@"; do

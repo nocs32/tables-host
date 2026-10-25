@@ -1,4 +1,4 @@
-# The five tables, Caddy in front of them, and the Cloudflare Tunnel that brings the internet in.
+# The five tables and Cinemate, Caddy in front of them, and the Cloudflare Tunnel that brings the internet in.
 # Run it with ./deploy.sh rather than by hand: it fetches the games and builds one at a time.
 
 name: tables
@@ -54,6 +54,15 @@ services:
       dockerfile: ../../game.Dockerfile
       args: { SCOPE: bluff-table }
 
+  # Not a table game, but built the same way: watch videos together (github.com/nocs32/cinemate).
+  cinemate:
+    <<: *game
+    image: tables/cinemate
+    build:
+      context: ./games/cinemate
+      dockerfile: ../../game.Dockerfile
+      args: { SCOPE: cinemate }
+
   caddy:
     image: tables/caddy
     build:
@@ -64,9 +73,10 @@ services:
         telephone: service:telephone
         wild: service:wild
         bluff: service:bluff
+        cinemate: service:cinemate
     restart: unless-stopped
     networks: [tables]
-    depends_on: [felt, scribble, telephone, wild, bluff]
+    depends_on: [felt, scribble, telephone, wild, bluff, cinemate]
     volumes:
       - ./library:/srv/library:ro
     # Only on the Pi itself, for testing through an SSH port forward. The internet comes in

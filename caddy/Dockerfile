@@ -10,4 +10,5 @@ COPY --from=scribble /web /srv/scribble
 COPY --from=telephone /web /srv/telephone
 COPY --from=wild /web /srv/wild
 COPY --from=bluff /web /srv/bluff
+COPY --from=cinemate /web /srv/cinemate
 COPY Caddyfile /etc/caddy/Caddyfile
