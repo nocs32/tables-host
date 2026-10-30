@@ -11,4 +11,5 @@ COPY --from=telephone /web /srv/telephone
 COPY --from=wild /web /srv/wild
 COPY --from=bluff /web /srv/bluff
 COPY --from=cinemate /web /srv/cinemate
+COPY --from=zdam /web /srv/zdam
 COPY Caddyfile /etc/caddy/Caddyfile

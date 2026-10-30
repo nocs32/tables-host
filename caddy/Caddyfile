@@ -66,6 +66,11 @@ http://cinemate.timnox.dev, http://cinemate.localhost {
 	import game cinemate
 }
 
+# Здам: a static app (the game snippet's /live route is simply unused) plus its sync API at /api.
+http://zdam.timnox.dev, http://zdam.localhost {
+	import game zdam
+}
+
 # The catalogue page. Mounted from the repo, so a change to it needs no rebuild.
 http://library.timnox.dev, http://library.localhost {
 	encode zstd gzip

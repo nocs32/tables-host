@@ -1,4 +1,4 @@
-# The five tables and Cinemate, Caddy in front of them, and the Cloudflare Tunnel that brings the internet in.
+# The five tables, Cinemate and Здам, Caddy in front of them, and the Cloudflare Tunnel that brings the internet in.
 # Run it with ./deploy.sh rather than by hand: it fetches the games and builds one at a time.
 
 name: tables
@@ -67,6 +67,21 @@ services:
     ports:
       - 127.0.0.1:2573:3000
 
+  # Здам (github.com/nocs32/zdam): one person's driving-theory study app. Caddy serves the app; this
+  # container only keeps their progress in sync between devices. Built from the repo's own Dockerfile.
+  zdam:
+    image: tables/zdam
+    build:
+      context: ./games/zdam
+    restart: unless-stopped
+    networks: [tables]
+    # ZDAM_KEY: the personal sync key. Without it the app works, but every device keeps its own progress.
+    env_file:
+      - path: ./secrets/zdam.env
+        required: false
+    volumes:
+      - zdam-data:/data
+
   # Cinemate's live-share relay (media/mediamtx.yml). On the host network, so it can announce the Pi's
   # own addresses to browsers; the MikroTik forwards UDP and TCP 8189 to it.
   media:
@@ -92,9 +107,10 @@ services:
         wild: service:wild
         bluff: service:bluff
         cinemate: service:cinemate
+        zdam: service:zdam
     restart: unless-stopped
     networks: [tables]
-    depends_on: [felt, scribble, telephone, wild, bluff, cinemate]
+    depends_on: [felt, scribble, telephone, wild, bluff, cinemate, zdam]
     volumes:
       - ./library:/srv/library:ro
     # Cinemate's live-share relay runs on the host network (it has to announce the Pi's own
@@ -118,3 +134,7 @@ services:
 
 networks:
   tables:
+
+volumes:
+  # Здам's progress and its daily backups. Survives rebuilds; `docker compose down -v` would delete it.
+  zdam-data:

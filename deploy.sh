@@ -16,8 +16,9 @@ declare -A repos=(
   [wild]=wild-table
   [bluff]=bluff-table
   [cinemate]=cinemate
+  [zdam]=zdam
 )
-order=(felt scribble telephone wild bluff cinemate)
+order=(felt scribble telephone wild bluff cinemate zdam)
 
 if [[ $# -gt 0 ]]; then
   for service in "$@"; do
