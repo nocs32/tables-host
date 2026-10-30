@@ -64,15 +64,16 @@ for service in "${order[@]}"; do
   fi
 done
 
+# Only copies the games' built web apps out of their images (see compose.yaml): no game is rebuilt here.
 echo "Building caddy"
 docker compose build caddy
 
 if [[ -f secrets/tunnel.json ]] && ! grep -q '^tunnel: TUNNEL_ID' cloudflared/config.yml; then
-  docker compose up -d --remove-orphans
+  docker compose up -d --no-build --remove-orphans
 else
   echo "No tunnel yet (secrets/tunnel.json or the tunnel id in cloudflared/config.yml is missing):"
   echo "starting the games and Caddy only."
-  docker compose up -d --remove-orphans "${order[@]}" caddy
+  docker compose up -d --no-build --remove-orphans "${order[@]}" caddy
 fi
 
 docker image prune -f >/dev/null

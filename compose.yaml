@@ -100,14 +100,17 @@ services:
     image: tables/caddy
     build:
       context: ./caddy
+      # The games' finished images, not `service:` contexts: with `service:` Compose would rebuild every
+      # game alongside Caddy, all at once, which runs the Pi out of memory when the build cache is cold.
+      # deploy.sh builds each game first, one at a time.
       additional_contexts:
-        felt: service:felt
-        scribble: service:scribble
-        telephone: service:telephone
-        wild: service:wild
-        bluff: service:bluff
-        cinemate: service:cinemate
-        zdam: service:zdam
+        felt: docker-image://tables/felt
+        scribble: docker-image://tables/scribble
+        telephone: docker-image://tables/telephone
+        wild: docker-image://tables/wild
+        bluff: docker-image://tables/bluff
+        cinemate: docker-image://tables/cinemate
+        zdam: docker-image://tables/zdam
     restart: unless-stopped
     networks: [tables]
     depends_on: [felt, scribble, telephone, wild, bluff, cinemate, zdam]
