@@ -1,6 +1,6 @@
 # Tables Host
 
-Runs the five table games, their catalogue page and Cinemate on a Raspberry Pi, behind one Cloudflare Tunnel.
+Runs the five table games, their catalogue page, Cinemate and Tunes on a Raspberry Pi, behind one Cloudflare Tunnel.
 
 | Address | What |
 |---|---|
@@ -11,8 +11,9 @@ Runs the five table games, their catalogue page and Cinemate on a Raspberry Pi, 
 | https://wild.timnox.dev | [Wild Table](https://github.com/nocs32/wild-table), the card game on a 3D table |
 | https://bluff.timnox.dev | [Bluff Table](https://github.com/nocs32/bluff-table), the bluffing game in a saloon |
 | https://cinemate.timnox.dev | [Cinemate](https://github.com/nocs32/cinemate), watching videos together in sync (not a table game, but built and hosted the same way) |
+| https://tunes.timnox.dev | [Tunes](https://github.com/nocs32/tunes), new music from your Spotify taste, picked by Claude, for a few friends. Not on the catalogue page: only Spotify accounts on its user list can log in |
 
-The game repos don't change for this: `deploy.sh` clones each one's `main` from GitHub and builds it with the same Dockerfile.
+The game repos don't change for this: `deploy.sh` clones each one's `main` from GitHub and builds it with the same Dockerfile. Tunes is the exception: it brings its own `Dockerfile`.
 
 ## How it fits together
 
@@ -23,6 +24,7 @@ internet ─► Cloudflare ─► tunnel ─► caddy ─┬─► library page 
                                               ├─► telephone
                                               ├─► wild
                                               ├─► bluff
+                                              ├─► tunes     (API; SQLite in the tunes-data volume)
                                               └─► cinemate ◄── media (relay)
                                                                  ▲
 internet ─► MikroTik, UDP/TCP 8189 ─► media (Cinemate's live-share video)
@@ -31,6 +33,7 @@ internet ─► MikroTik, UDP/TCP 8189 ─► media (Cinemate's live-share video
 - **tunnel** (`cloudflare/cloudflared`): connects out to Cloudflare, so the sites need no router ports. Cloudflare does the HTTPS; every hostname arrives at Caddy.
 - **caddy**: picks the game by hostname. It serves the game's built web app, sends `/api/*` to the game, and sends `/live/*` (the live tables, over WebSocket) to the game without the `/live` prefix, the same as `vite preview` did for `pnpm play`.
 - **One container per game** (`game.Dockerfile`): runs the game's core-api on port 3000. The image also carries the built web app, which the Caddy image copies at build time.
+- **tunes** (its repo's own `Dockerfile`): the same arrangement, Caddy serving the page and sending `/api/*` to the container. Logins, mixes and votes live in SQLite in the `tunes-data` volume, which survives rebuilds (`docker compose down -v` would delete it). A mix takes 1–2 minutes, longer than Cloudflare's 100-second limit for one request, so the page starts it as a job and checks back.
 
 - **media** (`bluenviron/mediamtx`, `media/mediamtx.yml`): Cinemate's live-share relay. It takes a share over WHIP and copies it to every watcher over WHEP without re-encoding. The small setup requests come through the tunnel (Caddy sends `cinemate.timnox.dev/media/*` to it); the video can't, so it comes in on **UDP 8189** (TCP 8189 as the fallback), the one port the MikroTik forwards to the Pi. It runs on the host network to announce the Pi's addresses, takes the home's public IP from `secrets/media.env`, and asks Cinemate's core-api (`127.0.0.1:2573`, only on the Pi) before anyone publishes or watches.
 
@@ -75,6 +78,7 @@ Kept in `secrets/` on the Pi, never in git (see [secrets/README.md](secrets/READ
 
 - `tunnel.json`: the tunnel's credentials.
 - `felt.env`: Felt Table's Unsplash key. Optional: without it the Unsplash picker is off.
+- `tunes.env`: Tunes' settings: `SPOTIFY_CLIENT_ID`, `ANTHROPIC_API_KEY`, `PUBLIC_URL=https://tunes.timnox.dev`, and `TOKEN_KEY` (made on the Pi; changing it logs everyone out). Without it Tunes doesn't start.
 
 ## Setting up the tunnel
 
@@ -85,7 +89,7 @@ cloudflared tunnel create tables
 cloudflared tunnel route dns --overwrite-dns tables library.timnox.dev
 ```
 
-Repeat the `route dns` line for `jigsaw`, `scribble`, `telephone`, `wild`, `bluff` and `cinemate`. Then:
+Repeat the `route dns` line for `jigsaw`, `scribble`, `telephone`, `wild`, `bluff`, `cinemate` and `tunes`. Then:
 
 - copy `~/.cloudflared/<tunnel id>.json` to `secrets/tunnel.json` on the Pi;
 - put the tunnel id in `cloudflared/config.yml`;
