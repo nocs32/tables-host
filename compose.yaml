@@ -1,4 +1,4 @@
-# The five tables, Cinemate and Здам, Caddy in front of them, and the Cloudflare Tunnel that brings the internet in.
+# The five tables, Cinemate, Здам and Tunes, Caddy in front of them, and the Cloudflare Tunnel that brings the internet in.
 # Run it with ./deploy.sh rather than by hand: it fetches the games and builds one at a time.
 
 name: tables
@@ -82,6 +82,22 @@ services:
     volumes:
       - zdam-data:/data
 
+  # Tunes (github.com/nocs32/tunes): a Spotify + Claude music recommender for a handful of friends.
+  # Caddy serves the page; this container answers /api. Built from the repo's own Dockerfile.
+  tunes:
+    image: tables/tunes
+    build:
+      context: ./games/tunes
+    restart: unless-stopped
+    networks: [tables]
+    # SPOTIFY_CLIENT_ID, TOKEN_KEY, ANTHROPIC_API_KEY, PUBLIC_URL (see the tunes README).
+    # Without it the server stops at start and says what's missing.
+    env_file:
+      - path: ./secrets/tunes.env
+        required: false
+    volumes:
+      - tunes-data:/data
+
   # Cinemate's live-share relay (media/mediamtx.yml). On the host network, so it can announce the Pi's
   # own addresses to browsers; the MikroTik forwards UDP and TCP 8189 to it.
   media:
@@ -111,9 +127,10 @@ services:
         bluff: docker-image://tables/bluff
         cinemate: docker-image://tables/cinemate
         zdam: docker-image://tables/zdam
+        tunes: docker-image://tables/tunes
     restart: unless-stopped
     networks: [tables]
-    depends_on: [felt, scribble, telephone, wild, bluff, cinemate, zdam]
+    depends_on: [felt, scribble, telephone, wild, bluff, cinemate, zdam, tunes]
     volumes:
       - ./library:/srv/library:ro
     # Cinemate's live-share relay runs on the host network (it has to announce the Pi's own
@@ -141,3 +158,5 @@ networks:
 volumes:
   # Здам's progress and its daily backups. Survives rebuilds; `docker compose down -v` would delete it.
   zdam-data:
+  # Tunes' SQLite file: logins (encrypted Spotify tokens), runs, votes. Same warning as above.
+  tunes-data:

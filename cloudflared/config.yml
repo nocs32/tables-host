@@ -20,4 +20,6 @@ ingress:
     service: http://caddy:80
   - hostname: zdam.timnox.dev
     service: http://caddy:80
+  - hostname: tunes.timnox.dev
+    service: http://caddy:80
   - service: http_status:404

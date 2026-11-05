@@ -71,6 +71,12 @@ http://zdam.timnox.dev, http://zdam.localhost {
 	import game zdam
 }
 
+# Tunes: the page plus its API at /api (the game snippet's /live route is simply unused).
+# A run is a background job the page polls, so no request comes near Cloudflare's 100 s limit.
+http://tunes.timnox.dev, http://tunes.localhost {
+	import game tunes
+}
+
 # The catalogue page. Mounted from the repo, so a change to it needs no rebuild.
 http://library.timnox.dev, http://library.localhost {
 	encode zstd gzip

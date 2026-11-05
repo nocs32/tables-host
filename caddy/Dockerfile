@@ -12,4 +12,5 @@ COPY --from=wild /web /srv/wild
 COPY --from=bluff /web /srv/bluff
 COPY --from=cinemate /web /srv/cinemate
 COPY --from=zdam /web /srv/zdam
+COPY --from=tunes /web /srv/tunes
 COPY Caddyfile /etc/caddy/Caddyfile
