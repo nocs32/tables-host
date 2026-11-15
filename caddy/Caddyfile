@@ -86,10 +86,21 @@ http://library.timnox.dev, http://library.localhost {
 }
 
 # The notes vault's sync hub (Obsidian Self-hosted LiveSync → CouchDB). CouchDB checks the login itself.
-# flush_interval -1: LiveSync keeps a changes feed open; pass it through as it streams.
+# Not a web page: a request without a login (a browser) gets the same 404 as an unknown site, so there is
+# no login popup, and CouchDB's admin page (/_utils) is never served. Obsidian sends its login on every
+# request; CORS preflights (OPTIONS) carry none, so those pass too.
 http://notes.timnox.dev, http://notes.localhost {
-	reverse_proxy couchdb:5984 {
-		flush_interval -1
+	@obsidian expression `!path('/_utils', '/_utils/*') && (method('OPTIONS') || header({'Authorization': '*'}))`
+
+	handle @obsidian {
+		# flush_interval -1: LiveSync keeps a changes feed open; pass it through as it streams.
+		reverse_proxy couchdb:5984 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		respond "Not found" 404
 	}
 }
 
