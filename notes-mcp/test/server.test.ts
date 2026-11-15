@@ -43,11 +43,28 @@ function textOf(result: Awaited<ReturnType<Client["callTool"]>>): string {
   return (result.content as { type: string; text?: string }[]).map((c) => c.text ?? "").join("\n");
 }
 
-test("wrong paths get a plain 404", async () => {
+test("wrong paths and wrong keys get a plain 404", async () => {
   for (const p of ["/", "/mcp", `/${SECRET.slice(0, -1)}x/mcp`, `/${SECRET}/mcp/extra`]) {
     const res = await fetch(`${BASE}${p}`, { method: "POST", body: "{}" });
     assert.equal(res.status, 404, p);
   }
+  for (const auth of [`Bearer ${SECRET}x`, SECRET, `bearer ${SECRET}`, "Bearer "]) {
+    const res = await fetch(`${BASE}/mcp`, { method: "POST", body: "{}", headers: { authorization: auth } });
+    assert.equal(res.status, 404, auth);
+  }
+  // The key belongs in the header, not both: the secret path with a header is still just the secret path.
+  const res = await fetch(`${BASE}/${SECRET}/mcp`, { method: "GET" });
+  assert.equal(res.status, 405);
+});
+
+test("the Authorization header opens /mcp", async () => {
+  const client = new Client({ name: "test", version: "1.0.0" });
+  await client.connect(
+    new StreamableHTTPClientTransport(new URL(`${BASE}/mcp`), { requestInit: { headers: { Authorization: `Bearer ${SECRET}` } } }),
+  );
+  const { tools } = await client.listTools();
+  assert.equal(tools.length, 5);
+  await client.close();
 });
 
 test("tools are listed with instructions", async () => {

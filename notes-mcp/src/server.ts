@@ -1,5 +1,6 @@
 // Tim's notes vault as an MCP server for claude.ai (a custom connector). Streamable HTTP, stateless.
-// The only way in is https://notes-mcp.timnox.dev/<NOTES_MCP_SECRET>/mcp; every other path is a 404.
+// The way in is https://notes-mcp.timnox.dev/mcp with the header `Authorization: Bearer <NOTES_MCP_SECRET>`
+// (or the older /<NOTES_MCP_SECRET>/mcp); anything else is a 404.
 // Tools: search, list, read (text and images), create, edit. Nothing can be deleted.
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
@@ -205,11 +206,19 @@ function buildServer(): McpServer {
 
 // --- HTTP ------------------------------------------------------------------------------------------------
 
-const expected = Buffer.from(`/${SECRET}/mcp`);
+const secretPath = Buffer.from(`/${SECRET}/mcp`);
+const bearer = Buffer.from(`Bearer ${SECRET}`);
 
-function isMcpPath(url: string | undefined): boolean {
-  const pathname = Buffer.from((url ?? "").split("?")[0]);
-  return pathname.length === expected.length && timingSafeEqual(pathname, expected);
+function same(given: string, expected: Buffer): boolean {
+  const value = Buffer.from(given);
+  return value.length === expected.length && timingSafeEqual(value, expected);
+}
+
+/** The way in: `/mcp` with `Authorization: Bearer <secret>` (claude.ai's request header), or the older `/<secret>/mcp`. */
+function isAllowed(req: IncomingMessage): boolean {
+  const pathname = (req.url ?? "").split("?")[0];
+  if (pathname === "/mcp") return same(req.headers.authorization ?? "", bearer);
+  return same(pathname, secretPath);
 }
 
 function plain(res: ServerResponse, status: number, body: string) {
@@ -229,7 +238,7 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
 
 createServer(async (req, res) => {
   if (req.url === "/healthz") return plain(res, 200, "ok");
-  if (!isMcpPath(req.url)) return plain(res, 404, "Not found");
+  if (!isAllowed(req)) return plain(res, 404, "Not found");
   if (req.method !== "POST") {
     // Stateless server: no standalone SSE stream and no sessions to end.
     res.writeHead(405, { allow: "POST", "content-type": "application/json" });

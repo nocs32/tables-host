@@ -149,14 +149,14 @@ services:
       - bridge-state:/deno-dir/location_data
 
   # The notes vault for claude.ai: an MCP server (notes-mcp/) over the bridge's ~/vault, added to claude.ai
-  # as a custom connector. Caddy serves it at notes-mcp.timnox.dev; it answers only on its secret path.
+  # as a custom connector. Caddy serves it at notes-mcp.timnox.dev; it answers only with the right key.
   notes-mcp:
     image: tables/notes-mcp
     build:
       context: ./notes-mcp
     restart: unless-stopped
     networks: [tables]
-    # NOTES_MCP_SECRET: the long random path segment. Without it the server stops at start.
+    # NOTES_MCP_SECRET: the key claude.ai sends as `Authorization: Bearer <secret>`. Without it the server stops at start.
     env_file: ./secrets/notes-mcp.env
     volumes:
       - /home/admin/vault:/vault

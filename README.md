@@ -13,7 +13,7 @@ Runs the five table games, their catalogue page, Cinemate and Tunes on a Raspber
 | https://cinemate.timnox.dev | [Cinemate](https://github.com/nocs32/cinemate), watching videos together in sync (not a table game, but built and hosted the same way) |
 | https://tunes.timnox.dev | [Tunes](https://github.com/nocs32/tunes), new music from your Spotify taste, picked by Claude, for a few friends. Not on the catalogue page: only Spotify accounts on its user list can log in |
 | https://notes.timnox.dev | The notes vault's sync hub: CouchDB for Obsidian's Self-hosted LiveSync plugin. Not a web page, and not on the catalogue page: only Obsidian (with the login) talks to it |
-| https://notes-mcp.timnox.dev | The notes vault for claude.ai: an MCP server, added in claude.ai as a custom connector. Answers only on its secret path (`secrets/notes-mcp.env`); everything else is a 404 |
+| https://notes-mcp.timnox.dev | The notes vault for claude.ai: an MCP server, added in claude.ai as a custom connector. Answers only at `/mcp` with `Authorization: Bearer <secret>` (`secrets/notes-mcp.env`); everything else is a 404 |
 
 The game repos don't change for this: `deploy.sh` clones each one's `main` from GitHub and builds it with the same Dockerfile. Tunes is the exception: it brings its own `Dockerfile`.
 
@@ -46,7 +46,7 @@ internet ─► MikroTik, UDP/TCP 8189 ─► media (Cinemate's live-share video
 
 - **bridge** (`bridge/`, [livesync-bridge](https://github.com/vrtmrz/livesync-bridge) pinned to one commit): keeps `~/vault` on the Pi, plain Markdown files, in sync with the notes database in both directions, so tools that aren't Obsidian can use the notes. It talks to `couchdb` directly, not through Caddy, and runs as the Pi's own user so the files stay editable there. `bridge/start.ts` writes its config from `secrets/couchdb.env` and `secrets/bridge.env` when it starts. The `bridge-state` volume remembers what it has synced; losing it only means a full rescan.
 
-- **notes-mcp** (`notes-mcp/`, TypeScript run directly by Node 24): the notes vault as an MCP server for claude.ai, over `~/vault`. Tools: search, list, read (text and images), create, edit (append, add to or replace a section, replace text). Nothing can be deleted, paths can't leave the vault or touch hidden folders, and writes are atomic. It answers only on `/<NOTES_MCP_SECRET>/mcp`. Tests: `npm install && npm test` in `notes-mcp/` (Node 24).
+- **notes-mcp** (`notes-mcp/`, TypeScript run directly by Node 24): the notes vault as an MCP server for claude.ai, over `~/vault`. Tools: search, list, read (text and images), create, edit (append, add to or replace a section, replace text). Nothing can be deleted, paths can't leave the vault or touch hidden folders, and writes are atomic. claude.ai reaches it at `/mcp` with the request header `Authorization: Bearer <NOTES_MCP_SECRET>` (the older `/<NOTES_MCP_SECRET>/mcp` also works); anything else is a 404. Tests: `npm install && npm test` in `notes-mcp/` (Node 24).
 
 - **media** (`bluenviron/mediamtx`, `media/mediamtx.yml`): Cinemate's live-share relay. It takes a share over WHIP and copies it to every watcher over WHEP without re-encoding. The small setup requests come through the tunnel (Caddy sends `cinemate.timnox.dev/media/*` to it); the video can't, so it comes in on **UDP 8189** (TCP 8189 as the fallback), the one port the MikroTik forwards to the Pi. It runs on the host network to announce the Pi's addresses, takes the home's public IP from `secrets/media.env`, and asks Cinemate's core-api (`127.0.0.1:2573`, only on the Pi) before anyone publishes or watches.
 
@@ -94,7 +94,7 @@ Kept in `secrets/` on the Pi, never in git (see [secrets/README.md](secrets/READ
 - `tunes.env`: Tunes' settings: `SPOTIFY_CLIENT_ID`, `ANTHROPIC_API_KEY`, `PUBLIC_URL=https://tunes.timnox.dev`, and `TOKEN_KEY` (made on the Pi; changing it logs everyone out). Without it Tunes doesn't start.
 - `couchdb.env`: the notes CouchDB's admin, `COUCHDB_USER` and `COUCHDB_PASSWORD`. Required: without it CouchDB doesn't start.
 - `bridge.env`: the vault's E2E passphrase and ID key for the notes bridge. Make it on the Pi with `bridge/set-secrets.sh`, which asks for both without showing them.
-- `notes-mcp.env`: `NOTES_MCP_SECRET`, the secret part of the claude.ai connector's address. Without it the notes MCP server doesn't start.
+- `notes-mcp.env`: `NOTES_MCP_SECRET`, the key claude.ai's connector sends as `Authorization: Bearer <secret>`. Without it the notes MCP server doesn't start.
 
 ## Setting up the tunnel
 
