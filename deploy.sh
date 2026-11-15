@@ -77,6 +77,10 @@ docker compose build couchdb
 echo "Building bridge"
 docker compose build bridge
 
+# The notes MCP server for claude.ai: no build step, just its npm packages.
+echo "Building notes-mcp"
+docker compose build notes-mcp
+
 if [[ -f secrets/tunnel.json ]] && ! grep -q '^tunnel: TUNNEL_ID' cloudflared/config.yml; then
   docker compose up -d --no-build --remove-orphans
 else

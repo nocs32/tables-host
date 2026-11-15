@@ -24,4 +24,6 @@ ingress:
     service: http://caddy:80
   - hostname: notes.timnox.dev
     service: http://caddy:80
+  - hostname: notes-mcp.timnox.dev
+    service: http://caddy:80
   - service: http_status:404

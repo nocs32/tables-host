@@ -104,6 +104,13 @@ http://notes.timnox.dev, http://notes.localhost {
 	}
 }
 
+# The notes vault's MCP server for claude.ai. It checks the secret path itself and 404s everything else.
+http://notes-mcp.timnox.dev, http://notes-mcp.localhost {
+	reverse_proxy notes-mcp:3000 {
+		flush_interval -1
+	}
+}
+
 # Anything else (a hostname the tunnel shouldn't be sending).
 http:// {
 	respond "Not found" 404

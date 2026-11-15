@@ -1,0 +1,23 @@
+{
+  "name": "notes-mcp",
+  "version": "1.0.0",
+  "description": "Tim's notes vault as an MCP server for claude.ai",
+  "scripts": {
+    "test": "node --test test/vault.test.ts test/server.test.ts",
+    "start": "node src/server.ts",
+    "check": "tsc --noEmit --strict --module nodenext --moduleResolution nodenext --target es2023 --allowImportingTsExtensions --erasableSyntaxOnly --skipLibCheck src/server.ts src/vault.ts test/vault.test.ts test/server.test.ts"
+  },
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^5.9.3"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  }
+}
