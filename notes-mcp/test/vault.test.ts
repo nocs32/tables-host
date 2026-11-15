@@ -72,6 +72,37 @@ test("create refuses to overwrite; writes leave no temp files", async () => {
   await assert.rejects(vault.writeText("Inbox/x.exe", "no", "create"), VaultError);
 });
 
+test("move into a folder keeps the name; renames work; nothing is overwritten", async () => {
+  const vault = await fixture();
+  await vault.writeText("Inbox/Lamp idea.md", "A lamp.\n", "create");
+  assert.deepEqual(await vault.move("Inbox/Lamp idea.md", "Projects/Ambient lights/"), {
+    from: "Inbox/Lamp idea.md",
+    to: "Projects/Ambient lights/Lamp idea.md",
+  });
+  assert.equal(await readFile(path.join(vault.root, "Projects", "Ambient lights", "Lamp idea.md"), "utf8"), "A lamp.\n");
+  assert.equal(await vault.exists("Inbox/Lamp idea.md"), false);
+  // A folder given without the trailing slash.
+  assert.equal((await vault.move("Projects/Ambient lights/Lamp idea.md", "Archive")).to, "Archive/Lamp idea.md");
+  // A rename.
+  assert.equal((await vault.move("Archive/Lamp idea.md", "Archive/Spiral lamp.md")).to, "Archive/Spiral lamp.md");
+  // Never over an existing note.
+  await assert.rejects(vault.move("Archive/Spiral lamp.md", "Home.md"), /Already exists/);
+});
+
+test("move refuses type changes, hidden targets, missing sources and the fixed notes", async () => {
+  const vault = await fixture();
+  await vault.writeText("Inbox/Inbox.md", "Captures.\n", "create");
+  await vault.writeText("Inbox/Idea.md", "x\n", "create");
+  await assert.rejects(vault.move("Inbox/Idea.md", "Inbox/Idea.txt"), /file type/);
+  await assert.rejects(vault.move("Inbox/Idea.md", ".obsidian/"), VaultError);
+  await assert.rejects(vault.move("Inbox/Nope.md", "Archive/"), /No such note/);
+  await assert.rejects(vault.move("Inbox/Idea.md", "Inbox/"), /already there/);
+  await assert.rejects(vault.move("Inbox/Inbox.md", "Archive/"), /stays where it is/);
+  await assert.rejects(vault.move("Home.md", "Archive/"), /stays where it is/);
+  // Pictures move too.
+  assert.equal((await vault.move("Projects/Desk robot/photo.webp", "Archive/")).to, "Archive/photo.webp");
+});
+
 const queue = "# Print queue\n\n## Next\n- Benchy\n- Spool holder\n\n## Done\n- nothing yet\n";
 
 test("append_to_section adds at the end of the section, keeping the gap", () => {

@@ -1,7 +1,7 @@
 // Tim's notes vault as an MCP server for claude.ai (a custom connector). Streamable HTTP, stateless.
 // The way in is https://notes-mcp.timnox.dev/mcp with the header `Authorization: Bearer <NOTES_MCP_SECRET>`
 // (or the older /<NOTES_MCP_SECRET>/mcp); anything else is a 404.
-// Tools: search, list, read (text and images), create, edit. Nothing can be deleted.
+// Tools: search, list, read (text and images), create, edit, move. Nothing can be deleted.
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { timingSafeEqual } from "node:crypto";
@@ -26,7 +26,7 @@ const MAX_IMAGE = 4_000_000;
 const INSTRUCTIONS = `This is Tim's notes vault (an Obsidian vault of Markdown files): his hobby projects, ideas, shopping lists and research.
 Search it before answering anything about his projects, plans, purchases, printer, robots, home network or ideas, and say which note an answer came from. Do this even when you already remember something about the topic: the notes are newer than any memory or earlier chat, and they win where the two disagree.
 Layout: Home.md explains the vault. Projects/<Name>/<Name>.md is each project's main note (front matter: type: project, status: idea | active | parked | binned); other files in that folder belong to the project (type: doc). Inbox/ holds quick captures. Research/ holds reports. Archive/ holds binned ideas.
-When Tim asks to note or remember something new that has no obvious home, create it in Inbox/. Add to existing notes with edit_note rather than rewriting them, and keep their front matter and wording. Notes can be in English or Ukrainian; answer in the language Tim uses.
+When Tim asks to note or remember something new that has no obvious home, create it in Inbox/. When he asks to sort the Inbox: move each note with move_note into its project's folder (and give it type: doc and project: "[[Name]]" front matter with edit_note), or add its content to an existing note with edit_note and then move the leftover to Archive/, or start a new Projects/<Name>/<Name>.md for a new idea. Inbox/Inbox.md, Archive/Archive.md and Home.md stay where they are. Nothing can be deleted; Archive/ is where things go instead. Add to existing notes with edit_note rather than rewriting them, and keep their front matter and wording. Notes can be in English or Ukrainian; answer in the language Tim uses.
 Never put passwords, keys or other secrets into notes.`;
 
 function text(value: string) {
@@ -195,6 +195,29 @@ function buildServer(): McpServer {
         if (updated === note.text) return text(`Nothing changed in ${note.rel}.`);
         await vault.writeText(note.rel, updated, "update");
         return text(`Updated ${note.rel} (${operation}).`);
+      } catch (error) {
+        return failure(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "move_note",
+    {
+      title: "Move or rename a note",
+      description:
+        "Moves (or renames) a note or picture inside the vault, e.g. to sort an Inbox note into its project folder, or to put a finished or unwanted note into Archive/ (there is no delete). `to` can be a folder ending in '/' (the name is kept) or a full new path. Fails if something is already there. Obsidian links point at note names, so renaming breaks [[links]] to the old name; plain moves keep them working.",
+      inputSchema: {
+        from: z.string().min(1).describe("Current vault-relative path, e.g. 'Inbox/Lamp idea.md'"),
+        to: z.string().min(1).describe("Destination folder ('Projects/Ambient lights/') or full path ('Archive/Lamp idea.md')"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    },
+    async ({ from, to }) => {
+      try {
+        log("move_note", `${from} -> ${to}`);
+        const moved = await vault.move(from, to);
+        return text(`Moved ${moved.from} → ${moved.to}.`);
       } catch (error) {
         return failure(error);
       }

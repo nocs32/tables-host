@@ -63,14 +63,14 @@ test("the Authorization header opens /mcp", async () => {
     new StreamableHTTPClientTransport(new URL(`${BASE}/mcp`), { requestInit: { headers: { Authorization: `Bearer ${SECRET}` } } }),
   );
   const { tools } = await client.listTools();
-  assert.equal(tools.length, 5);
+  assert.equal(tools.length, 6);
   await client.close();
 });
 
 test("tools are listed with instructions", async () => {
   const client = await connect();
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map((t) => t.name).sort(), ["create_note", "edit_note", "list_notes", "read_note", "search_notes"]);
+  assert.deepEqual(tools.map((t) => t.name).sort(), ["create_note", "edit_note", "list_notes", "move_note", "read_note", "search_notes"]);
   assert.match(client.getInstructions() ?? "", /Tim's notes vault/);
   await client.close();
 });
@@ -100,5 +100,9 @@ test("search, read, edit and create round trip", async () => {
   assert.equal(escape.isError, true);
 
   assert.match(textOf(await client.callTool({ name: "list_notes", arguments: {} })), /Inbox\/Lamp idea\.md/);
+
+  const moved = await client.callTool({ name: "move_note", arguments: { from: "Inbox/Lamp idea.md", to: "Projects/Ambient lights/" } });
+  assert.match(textOf(moved), /Moved Inbox\/Lamp idea\.md → Projects\/Ambient lights\/Lamp idea\.md/);
+  assert.equal(await readFile(path.join(vaultDir, "Projects", "Ambient lights", "Lamp idea.md"), "utf8"), "Spiral shade.\n");
   await client.close();
 });

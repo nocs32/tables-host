@@ -17,6 +17,9 @@ export const IMAGE_TYPES: Record<string, string> = {
 
 export class VaultError extends Error {}
 
+/** Notes that keep the vault's folders and layout: they can be edited but never moved. */
+const FIXED = new Set(["Home.md", "Inbox/Inbox.md", "Archive/Archive.md"]);
+
 export interface NoteInfo {
   path: string;
   kind: "text" | "image" | "other";
@@ -105,6 +108,30 @@ export class Vault {
     await writeFile(tmp, text, "utf8");
     await rename(tmp, abs);
     return rel;
+  }
+
+  /**
+   * Moves or renames a file inside the vault. `to` ending in "/" (or with no extension) is a folder and the
+   * name is kept. Never overwrites, never changes the file's type, never deletes anything.
+   */
+  async move(from: string, to: string): Promise<{ from: string; to: string }> {
+    const source = this.resolve(from);
+    if (FIXED.has(source.rel)) throw new VaultError(`${source.rel} stays where it is (it holds the vault's layout together).`);
+    await this.mustExist(source.rel, source.abs);
+    await this.checkReal(source.abs);
+    const name = path.posix.basename(source.rel);
+    const asFolder = /[\\/]\s*$/.test(to) || !path.posix.extname(to.trim().replaceAll("\\", "/"));
+    const target = this.resolve(asFolder ? `${to.trim().replace(/[\\/]+$/, "")}/${name}` : to);
+    if (target.rel === source.rel) throw new VaultError(`${source.rel} is already there.`);
+    if (path.extname(target.rel).toLowerCase() !== path.extname(source.rel).toLowerCase()) {
+      throw new VaultError(`Moving can't change the file type (${path.extname(source.rel)} → ${path.extname(target.rel) || "none"}).`);
+    }
+    if (await this.exists(target.rel)) throw new VaultError(`Already exists: ${target.rel}. Pick another name, or merge with edit_note.`);
+    const dir = path.dirname(target.abs);
+    await mkdir(dir, { recursive: true });
+    await this.checkReal(dir);
+    await rename(source.abs, target.abs);
+    return { from: source.rel, to: target.rel };
   }
 
   /** Every file under `folder` (vault-relative, "" for all), hidden ones and temp files left out. */
