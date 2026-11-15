@@ -27,6 +27,8 @@ internet ─► Cloudflare ─► tunnel ─► caddy ─┬─► library page 
                                               ├─► bluff
                                               ├─► tunes     (API; SQLite in the tunes-data volume)
                                               ├─► couchdb   (notes vault sync; couchdb-data volume)
+                                              │     ▲
+                                              │   bridge ◄──► ~/vault (plain .md files on the Pi)
                                               └─► cinemate ◄── media (relay)
                                                                  ▲
 internet ─► MikroTik, UDP/TCP 8189 ─► media (Cinemate's live-share video)
@@ -38,6 +40,8 @@ internet ─► MikroTik, UDP/TCP 8189 ─► media (Cinemate's live-share video
 - **tunes** (its repo's own `Dockerfile`): the same arrangement, Caddy serving the page and sending `/api/*` to the container. Logins, mixes and votes live in SQLite in the `tunes-data` volume, which survives rebuilds (`docker compose down -v` would delete it). A mix takes 1–2 minutes, longer than Cloudflare's 100-second limit for one request, so the page starts it as a job and checks back.
 
 - **couchdb** (`couchdb`, `couchdb/10-livesync.ini`): the sync hub for Tim's Obsidian notes vault. Obsidian on every device syncs through it with the Self-hosted LiveSync plugin, which encrypts the notes end to end, so the database holds only ciphertext. CouchDB checks the login itself (admin from `secrets/couchdb.env`); Caddy just passes `notes.timnox.dev` through. Data lives in the `couchdb-data` volume. Its image is the official one plus that settings file (a read-only mount makes the image's entrypoint stop). `docker compose up -d --build couchdb` updates it on its own.
+
+- **bridge** (`bridge/`, [livesync-bridge](https://github.com/vrtmrz/livesync-bridge) pinned to one commit): keeps `~/vault` on the Pi, plain Markdown files, in sync with the notes database in both directions, so tools that aren't Obsidian can use the notes. It talks to `couchdb` directly, not through Caddy, and runs as the Pi's own user so the files stay editable there. `bridge/start.ts` writes its config from `secrets/couchdb.env` and `secrets/bridge.env` when it starts. The `bridge-state` volume remembers what it has synced; losing it only means a full rescan.
 
 - **media** (`bluenviron/mediamtx`, `media/mediamtx.yml`): Cinemate's live-share relay. It takes a share over WHIP and copies it to every watcher over WHEP without re-encoding. The small setup requests come through the tunnel (Caddy sends `cinemate.timnox.dev/media/*` to it); the video can't, so it comes in on **UDP 8189** (TCP 8189 as the fallback), the one port the MikroTik forwards to the Pi. It runs on the host network to announce the Pi's addresses, takes the home's public IP from `secrets/media.env`, and asks Cinemate's core-api (`127.0.0.1:2573`, only on the Pi) before anyone publishes or watches.
 
@@ -84,6 +88,7 @@ Kept in `secrets/` on the Pi, never in git (see [secrets/README.md](secrets/READ
 - `felt.env`: Felt Table's Unsplash key. Optional: without it the Unsplash picker is off.
 - `tunes.env`: Tunes' settings: `SPOTIFY_CLIENT_ID`, `ANTHROPIC_API_KEY`, `PUBLIC_URL=https://tunes.timnox.dev`, and `TOKEN_KEY` (made on the Pi; changing it logs everyone out). Without it Tunes doesn't start.
 - `couchdb.env`: the notes CouchDB's admin, `COUCHDB_USER` and `COUCHDB_PASSWORD`. Required: without it CouchDB doesn't start.
+- `bridge.env`: the vault's E2E passphrase and ID key for the notes bridge. Make it on the Pi with `bridge/set-secrets.sh`, which asks for both without showing them.
 
 ## Setting up the tunnel
 

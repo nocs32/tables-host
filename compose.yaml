@@ -131,6 +131,23 @@ services:
       timeout: 5s
       retries: 3
 
+  # The notes vault as plain files: livesync-bridge mirrors the couchdb database to ~/vault on the Pi and
+  # back, so tools that aren't Obsidian (the Claude connector) can read and write notes. Needs the vault's
+  # passphrase and ID key in secrets/bridge.env (made with bridge/set-secrets.sh).
+  bridge:
+    image: tables/bridge
+    build:
+      context: ./bridge
+    restart: unless-stopped
+    networks: [tables]
+    depends_on: [couchdb]
+    env_file:
+      - ./secrets/couchdb.env
+      - ./secrets/bridge.env
+    volumes:
+      - /home/admin/vault:/app/data/vault
+      - bridge-state:/deno-dir/location_data
+
   caddy:
     image: tables/caddy
     build:
@@ -181,3 +198,5 @@ volumes:
   tunes-data:
   # The notes vault (CouchDB's databases). Same warning; the nightly backup copies it off the Pi.
   couchdb-data:
+  # The bridge's record of what it has already synced. Losing it only means a full rescan.
+  bridge-state:

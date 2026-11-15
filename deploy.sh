@@ -73,6 +73,10 @@ docker compose build caddy
 echo "Building couchdb"
 docker compose build couchdb
 
+# The notes bridge: pinned to one upstream commit, so this is quick after the first build.
+echo "Building bridge"
+docker compose build bridge
+
 if [[ -f secrets/tunnel.json ]] && ! grep -q '^tunnel: TUNNEL_ID' cloudflared/config.yml; then
   docker compose up -d --no-build --remove-orphans
 else
