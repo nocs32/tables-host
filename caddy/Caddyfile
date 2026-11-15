@@ -85,6 +85,14 @@ http://library.timnox.dev, http://library.localhost {
 	file_server
 }
 
+# The notes vault's sync hub (Obsidian Self-hosted LiveSync → CouchDB). CouchDB checks the login itself.
+# flush_interval -1: LiveSync keeps a changes feed open; pass it through as it streams.
+http://notes.timnox.dev, http://notes.localhost {
+	reverse_proxy couchdb:5984 {
+		flush_interval -1
+	}
+}
+
 # Anything else (a hostname the tunnel shouldn't be sending).
 http:// {
 	respond "Not found" 404

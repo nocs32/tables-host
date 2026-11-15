@@ -1,4 +1,4 @@
-# The five tables, Cinemate, Здам and Tunes, Caddy in front of them, and the Cloudflare Tunnel that brings the internet in.
+# The five tables, Cinemate, Здам, Tunes and the notes vault's CouchDB, Caddy in front of them, and the Cloudflare Tunnel that brings the internet in.
 # Run it with ./deploy.sh rather than by hand: it fetches the games and builds one at a time.
 
 name: tables
@@ -112,6 +112,25 @@ services:
       - path: ./secrets/media.env
         required: false
 
+  # The notes vault's sync hub: Obsidian's Self-hosted LiveSync plugin on every device syncs through
+  # this CouchDB (the plugin encrypts the notes end to end). Caddy serves it at notes.timnox.dev.
+  # couchdb/Dockerfile only adds the LiveSync settings. On its own: `docker compose up -d --build couchdb`.
+  couchdb:
+    image: tables/couchdb
+    build:
+      context: ./couchdb
+    restart: unless-stopped
+    networks: [tables]
+    # COUCHDB_USER and COUCHDB_PASSWORD (the admin). Required: without an admin CouchDB won't start.
+    env_file: ./secrets/couchdb.env
+    volumes:
+      - couchdb-data:/opt/couchdb/data
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:5984/_up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   caddy:
     image: tables/caddy
     build:
@@ -160,3 +179,5 @@ volumes:
   zdam-data:
   # Tunes' SQLite file: logins (encrypted Spotify tokens), runs, votes. Same warning as above.
   tunes-data:
+  # The notes vault (CouchDB's databases). Same warning; the nightly backup copies it off the Pi.
+  couchdb-data:

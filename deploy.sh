@@ -69,6 +69,10 @@ done
 echo "Building caddy"
 docker compose build caddy
 
+# The notes vault's CouchDB: the official image plus one settings file, so this is quick.
+echo "Building couchdb"
+docker compose build couchdb
+
 if [[ -f secrets/tunnel.json ]] && ! grep -q '^tunnel: TUNNEL_ID' cloudflared/config.yml; then
   docker compose up -d --no-build --remove-orphans
 else
