@@ -24,7 +24,7 @@ const MAX_TEXT = 200_000;
 const MAX_IMAGE = 4_000_000;
 
 const INSTRUCTIONS = `This is Tim's notes vault (an Obsidian vault of Markdown files): his hobby projects, ideas, shopping lists and research.
-Search it before answering anything about his projects, plans, purchases, printer, robots, home network or ideas, and say which note an answer came from.
+Search it before answering anything about his projects, plans, purchases, printer, robots, home network or ideas, and say which note an answer came from. Do this even when you already remember something about the topic: the notes are newer than any memory or earlier chat, and they win where the two disagree.
 Layout: Home.md explains the vault. Projects/<Name>/<Name>.md is each project's main note (front matter: type: project, status: idea | active | parked | binned); other files in that folder belong to the project (type: doc). Inbox/ holds quick captures. Research/ holds reports. Archive/ holds binned ideas.
 When Tim asks to note or remember something new that has no obvious home, create it in Inbox/. Add to existing notes with edit_note rather than rewriting them, and keep their front matter and wording. Notes can be in English or Ukrainian; answer in the language Tim uses.
 Never put passwords, keys or other secrets into notes.`;
@@ -51,7 +51,7 @@ function buildServer(): McpServer {
     {
       title: "Search notes",
       description:
-        "Full-text search over the vault. Every word must appear in the note or its path (case-insensitive). Returns the best matches with their properties and matching lines. Use short, distinctive words; try synonyms or the other language if nothing comes back.",
+        "Search Tim's notes vault, the source of truth for his projects, plans, purchases, printer and ideas. Call this before answering any question about those, even when you remember something about it: memory and earlier chats can be out of date, the notes are not. Full-text: every word must appear in the note or its path (case-insensitive). Returns the best matches with their properties and matching lines. Use short, distinctive words; try synonyms or the other language if nothing comes back.",
       inputSchema: {
         query: z.string().min(1).describe("Words to look for, e.g. 'print queue' or 'servo'"),
         limit: z.number().int().min(1).max(30).optional().describe("How many notes to return (default 10)"),
